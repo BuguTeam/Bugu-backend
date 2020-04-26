@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Activities{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  {% for activity in data %}
+    <article class="activity">
+      <header>
+        <div>
+          <h1>{{ activity['name'] }}</h1>
+          <div class="about">createTime: {{ activity['createTime'] }}</div>
+          <div class="about">startTime: {{ activity['startTime'] }}</div>
+          <div class="about">registrationDDL: {{ activity['registrationDDL'] }}</div>
+          <div class="about">maxParticipantNumber: {{ activity['maxParticipantNumber'] }}</div>
+          <div class="about">currentParticipantNumber: {{ activity['currentParticipantNumber'] }}</div>
+          <div class="about">status: {{ activity['status'] }}</div>
+          <div class="about">locationName: {{ activity['location']['locationName'] }}</div>
+          <div class="about">locationLongitude: {{ activity['location']['locationLongitude'] }}</div>
+          <div class="about">locationLatitude: {{ activity['location']['locationLatitude'] }}</div>
+          <div class="about">locationType: {{ activity['location']['locationType'] }}</div>
+        </div>
+      </header>
+      <p class="body">{{ activity['description'] }}</p>
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+{% endblock %}

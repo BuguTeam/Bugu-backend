@@ -36,35 +36,16 @@ def datetime_toString(dt):
 @app.route('/addActivity', methods=['GET', 'POST'])
 def addActivity():
     if request.method == 'POST':
-        title = request.form["title"]
-        startTime = request.form["startTime"]
-        registrationDDL = request.form["registrationDDL"]
-        #startTime = datetime_toTimestamp(string_toDatetime(request.form["startTime"]))
-        #registrationDDL = request.form["registrationDDL"]
-        #if registrationDDL != "":
-        #    registrationDDL = datetime_toTimestamp(string_toDatetime(registrationDDL))
-        descript = request.form["description"]
-        maxParticipantNumber = int(request.form["maxParticipantNumber"])
-
-        locationName = request.form["locationName"]
-        locationLongitude = float(request.form["locationLongitude"])
-        locationLatitude = float(request.form["locationLatitude"])
-        locationType = request.form["locationType"]
-
-        # json格式request的处理：
-        #data = json.loads(request.get_data(as_text=True))
-        #title = data["name"]
-        #startTime = datetime_toTimestamp(string_toDatetime(data["startTime"]))
-        #registrationDDL = data["registrationDDL"]
-        #if registrationDDL != "":
-            #registrationDDL = datetime_toTimestamp(string_toDatetime(registrationDDL))
-        #descript = data["description"]
-        #maxParticipantNumber = int(data["maxParticipantNumber"])
-        #location = data["location"]
-        #locationName = location["name"]
-        #locationLongitude = float(location["locationLongitude"])
-        #locationLatitude = float(location["locationLatitude"])
-        #locationType = location["locationType"]
+        title = str(json.loads(request.values.get("name")))
+        startTime = str(json.loads(request.values.get("startTime")))+":00"
+        registrationDDL = str(json.loads(request.values.get("registrationDDL")))+":00"
+        descript = str(json.loads(request.values.get("description")))
+        maxParticipantNumber = int(json.loads(request.values.get("maxParticipantNumber")))
+        location = json.loads(request.values.get("location"))
+        locationName = str(location["name"])
+        locationLongitude = float(location["longitude"])
+        locationLatitude = float(location["latitude"])
+        locationType = str(location["type"])
 
         database = db.get_db()
         if registrationDDL != "":
@@ -80,6 +61,8 @@ def addActivity():
                 (title, startTime, descript, maxParticipantNumber, locationName, locationLongitude, locationLatitude, locationType)
             )
         database.commit()
+
+        return 'Successfully Created'
     
     return render_template('addActivity.html')
 
@@ -88,20 +71,12 @@ def addActivity():
 @app.route('/getActivityList', methods=['GET', 'POST'])
 def getActivityList():
     if request.method == 'POST':
-        limit = int(request.form["limit"])
-        time = request.form["time"]
-
-        # json格式request的处理：
-        #data = json.loads(request.get_data(as_text=True))
-        #limit = int(data["limit"])
-        #time = data["time"]
+        limit = int(json.loads(request.values.get("limit")))
 
         activities = db.get_db().execute(
-            'SELECT title, createTime, startTime, registrationDDL, descript, maxParticipantNumber, currentParticipantNumber, stat, locationName, locationLongitude, locationLatitude, locationType'
+            'SELECT id, title, createTime, startTime, registrationDDL, descript, maxParticipantNumber, currentParticipantNumber, stat, locationName, locationLongitude, locationLatitude, locationType'
             ' FROM activity'
-            ' WHERE createTime < ?'
-            ' ORDER BY createTime DESC',
-            (time,)
+            ' ORDER BY createTime DESC'
         ).fetchall()
 
         jsonData = []
@@ -111,26 +86,27 @@ def getActivityList():
                 break
             cnt += 1
 
-            result = {} 
-            result['name'] = str(row[0])
-            result['createTime'] = row[1]
-            result['startTime'] = row[2]
-            result['registrationDDL'] = row[3]
+            result = {}
+            result['id'] = str(row[0])
+            result['name'] = str(row[1])
+            result['createTime'] = row[2]
+            result['startTime'] = row[3]
+            result['registrationDDL'] = row[4]
             #result['startTime'] = datetime_toString(datetime.datetime.fromtimestamp(row[2]))
             #result['registrationDDL'] = datetime_toString(datetime.datetime.fromtimestamp(row[3]))
-            result['description'] = str(row[4])
-            result['maxParticipantNumber'] = row[5]
-            result['currentParticipantNumber'] = row[6]
-            result['status'] = str(row[7])
+            result['description'] = str(row[5])
+            result['maxParticipantNumber'] = row[6]
+            result['currentParticipantNumber'] = row[7]
+            result['status'] = str(row[8])
             location = {}
-            location['locationName'] = str(row[8])
-            location['locationLongitude'] = row[9]
-            location['locationLatitude'] = row[10]
-            location['locationType'] = str(row[11])
+            location['name'] = str(row[9])
+            location['longitude'] = row[10]
+            location['latitude'] = row[11]
+            location['type'] = str(row[12])
             result['location'] = location
             jsonData.append(result)
 
-        return render_template('activities.html', data=jsonData)
+        return json.dumps(jsonData, ensure_ascii=False)
 
     else:
         return render_template('getActivityList.html')

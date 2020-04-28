@@ -63,6 +63,13 @@ Within the activated environment, use the following command to install Flask:
 $ pip install Flask
 ```
 
+Within the activated environment, install the project's dependencies with:
+
+```
+$ pip install -r requirement.txt
+```
+
+
 
 ### Setup
 

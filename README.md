@@ -60,13 +60,19 @@ Your shell prompt will change to show the name of the activated environment.
 Within the activated environment, use the following command to install Flask:
 
 ```
-$ pip install Flask
+(venv) $ pip install Flask
+```
+
+Or use domestic source to speed up downloading module like:
+
+```
+(venv) $ pip install -i https://mirrors.aliyun.com/pypi/simple Flask
 ```
 
 Within the activated environment, install the project's dependencies with:
 
 ```
-$ pip install -r requirement.txt
+(venv) $ pip install -r requirements.txt
 ```
 
 
@@ -75,14 +81,13 @@ $ pip install -r requirement.txt
 
 ---
 
+Set FLASK_APP and set FLASK_ENV(optional, set to 'development' enables debugging):
+
 For Linux and Mac:
 
 ```
 $ export FLASK_APP=demo_flask
 $ export FLASK_ENV=development
-$ flask init-db
-Initialized the database.
-$ flask run
 ```
 
 For Windows cmd, use `set` instead of `export`:
@@ -90,9 +95,6 @@ For Windows cmd, use `set` instead of `export`:
 ```
 > set FLASK_APP=demo_flask
 > set FLASK_ENV=development
-> flask init-db
-Initialized the database.
-> flask run
 ```
 
 For Windows PowerShell, use `$env:` instead of `export`:
@@ -100,9 +102,20 @@ For Windows PowerShell, use `$env:` instead of `export`:
 ```
 > $env:FLASK_APP = "demo_flask"
 > $env:FLASK_ENV = "development"
-> flask init-db
+```
+
+Run for the first time to set up database and related command line:
+
+```
+$ flask run
+```
+
+Press Ctrl+C to exit, then initialize the database, and run flask again:
+
+```
+$ flask init-db
 Initialized the database.
-> flask run
+$ flask run
 ```
 
 You’ll see output similar to this:

@@ -62,6 +62,7 @@ def addActivity():
             )
         database.commit()
 
+        print('Successfully Created')
         return 'Successfully Created'
     
     return render_template('addActivity.html')
@@ -106,6 +107,7 @@ def getActivityList():
             result['location'] = location
             jsonData.append(result)
 
+        print(jsonData)
         return json.dumps(jsonData, ensure_ascii=False)
 
     else:

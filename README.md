@@ -86,36 +86,30 @@ Set FLASK_APP and set FLASK_ENV(optional, set to 'development' enables debugging
 For Linux and Mac:
 
 ```
-$ export FLASK_APP=demo_flask
-$ export FLASK_ENV=development
+(venv) $ export FLASK_APP=demo_flask
+(venv) $ export FLASK_ENV=development
 ```
 
 For Windows cmd, use `set` instead of `export`:
 
 ```
-> set FLASK_APP=demo_flask
-> set FLASK_ENV=development
+(venv) > set FLASK_APP=demo_flask
+(venv) > set FLASK_ENV=development
 ```
 
 For Windows PowerShell, use `$env:` instead of `export`:
 
 ```
-> $env:FLASK_APP = "demo_flask"
-> $env:FLASK_ENV = "development"
+(venv) > $env:FLASK_APP = "demo_flask"
+(venv) > $env:FLASK_ENV = "development"
 ```
 
-Run for the first time to set up database and related command line:
+Initialize the database, and run flask:
 
 ```
-$ flask run
-```
-
-Press Ctrl+C to exit, then initialize the database, and run flask again:
-
-```
-$ flask init-db
+(venv) $ flask init-db
 Initialized the database.
-$ flask run
+(venv) $ flask run
 ```
 
 You’ll see output similar to this:

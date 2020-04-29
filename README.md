@@ -78,7 +78,7 @@ $ pip install -r requirement.txt
 For Linux and Mac:
 
 ```
-$ export FLASK_APP=flaskr
+$ export FLASK_APP=demo_flask
 $ export FLASK_ENV=development
 $ flask init-db
 Initialized the database.
@@ -88,7 +88,7 @@ $ flask run
 For Windows cmd, use `set` instead of `export`:
 
 ```
-> set FLASK_APP=flaskr
+> set FLASK_APP=demo_flask
 > set FLASK_ENV=development
 > flask init-db
 Initialized the database.
@@ -98,7 +98,7 @@ Initialized the database.
 For Windows PowerShell, use `$env:` instead of `export`:
 
 ```
-> $env:FLASK_APP = "flaskr"
+> $env:FLASK_APP = "demo_flask"
 > $env:FLASK_ENV = "development"
 > flask init-db
 Initialized the database.

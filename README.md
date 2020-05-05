@@ -18,12 +18,15 @@ Bugu微信小程序后端：使用flask+MySQL
 ├── web
        ├── app
        ├── instance
+           ├── config.py
        ├── migrations
        ├── venv
        ├── config.py
        ├── requirements.txt
        └── run.py
 ```
+
+`instance\config.py`中是配置文件，包含密钥等信息。
 
 1.配置virtualenv环境
 
@@ -158,6 +161,4 @@ db.session.commit()
 一些参考资料：https://www.cnblogs.com/dashucoding/p/9917371.html 
 
 3rd_session：  http://www.yiyongtong.com/archives/view-5954-1.html 
-
- 
 

@@ -10,12 +10,13 @@ class User(db.Model):
     
     __tablename__ = 'users'
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True) #id
-    open_id = db.Column(db.Integer, index=True, unique=True) #open_id
-    username = db.Column(db.String(60), index=True)
+    id = db.Column(db.Integer, autoincrement=True) #id
+    openid = db.Column(db.String(128), index=True,  primary_key=True, unique=True) #openid
+    nickname = db.Column(db.String(60), index=True)
     avatar_url = db.Column(db.String(128))
     
     is_admin = db.Column(db.Boolean, default=False)
+    participated_activities = db.relationship('Activity', backref='users', lazy='dynamic')
 
 
 class Activity(db.Model):
@@ -35,5 +36,7 @@ class Activity(db.Model):
     locationLongitude = db.Column(db.Float())
     locationLatitude = db.Column(db.Float())
     locationType = db.Column(db.String(10))
+    
+    initiator_id = db.Column(db.String(128), db.ForeignKey('users.openid'))
     
     

@@ -1,5 +1,6 @@
 import json
 import time
+import datetime
 from flask import request, jsonify
 from . import user
 from .. import db
@@ -39,6 +40,12 @@ def addActivity():
             registrationDDL = startTime
         if descript == None: descript = ""
         
+        third_session = request.values.get('third_session')
+        openid = gen_openid(third_session)
+        initiator = db.session.query(User).filter(User.openid==openid).first()
+        # if initiator is None:
+        
+        
         act = Activity(
             title=title,
             startTime=startTime,
@@ -49,7 +56,8 @@ def addActivity():
             locationName=locationName,
             locationLongitude=locationLongitude,
             locationLatitude=locationLatitude,
-            locationType=locationType)
+            locationType=locationType,
+            initiator_id=openid)
         db.session.add(act)
         db.session.commit()
 
@@ -62,17 +70,24 @@ def addActivity():
 
 @user.route('/getActivityList', methods=['GET', 'POST'])
 def getActivityList():
-    
+    print(getActivityList)
     if request.method == 'POST':
+        print(request.values)
         limit = int(json.loads(request.values.get('limit')))
         third_session = request.values.get('third_session')
+        lastActivityTime = str(json.loads(request.values.get('lastActivityTime')))
         openid = gen_openid(third_session)
-        print('limit: ', limit)
+        print('------limit: ', limit)
         print('third_session: ', third_session)
         print('openid: ', openid)
+        print('------lastActivityTime: ', lastActivityTime)
         
-        jsonData = []
-        activities = Activity.query.order_by(Activity.startTime.desc()).limit(limit).all()
+        alist = []
+        if len(lastActivityTime) > 0:
+            activities = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime)).order_by(Activity.startTime.desc()).limit(limit).all()
+        else:
+            activities = Activity.query.order_by(Activity.startTime.desc()).limit(limit).all()
+            
         for a in activities:
             a_dict = {
                 'id': a.id,
@@ -90,8 +105,13 @@ def getActivityList():
                 'password': "",
                 
             }
-            jsonData.append(a_dict)
-        print(jsonData)
+            alist.append(a_dict)
+            if len(lastActivityTime) == 0 or string_toDatetime(lastActivityTime) > a.startTime:
+                lastActivityTime = datetime_toString(a.startTime)
+        jsonData = {}
+        jsonData['alist'] = alist
+        jsonData['lastActivityTime'] = lastActivityTime
+        print('------returns actlist: ', jsonData)
         return json.dumps(jsonData, ensure_ascii=False)
 
     else:

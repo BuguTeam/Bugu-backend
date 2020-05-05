@@ -1,4 +1,4 @@
-## Health Information Management System
+## Bugu-backend
 
 这是一个dev分支
 
@@ -34,7 +34,11 @@ Bugu微信小程序后端：使用flask+MySQL
 (venv) pip install -r requirements.txt #安装对应的包
 ```
 
-**注意！**我们使用virtualenv来做python环境隔离和迁移，那么以后所有pip等操作都需要在这个名叫venv的虚拟环境下进行（也就是前面有一个venv的提示符）。如果安装了新的包，在提交代码时需要更新`requirements.txt`，可以手动添加，也可以自动导出当前环境：
+注意！
+
+我们使用virtualenv来做python环境隔离和迁移，那么以后所有pip等操作都需要在这个名叫venv的虚拟环境下进行（也就是前面有一个venv的提示符）。
+
+如果安装了新的包，在提交代码时需要更新`requirements.txt`，可以手动添加，也可以自动导出当前环境：
 
 到`\venv\Scripts`目录下，导出此环境下安装的包的版本信息 
 

@@ -1,296 +1,159 @@
-## flask后端
+## Health Information Management System
+
+这是一个dev分支
+
+Bugu微信小程序后端：使用flask+MySQL
+
+用到的工具
+
+1.需要先安装MySQL，并熟悉相关操作.
+
+2.使用python3, 推荐使用虚拟环境virtualenv，依赖包在`requirements.txt`中列出.
 
 
 
-### ~~虚弱的~~1.0
-
-### Layout
-
----
-
-```
-├── demo_flask/
-│   ├── __init__.py
-│   ├── db.py
-│   ├── schema.sql
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── addActivity.html
-│   │   ├── getActivityList.html
-│   │   └── activities.html
-│   └── static/
-│       └── style.css
-└── instance/
-    └── demo_flask.sqlite
-```
-
-
-### Installation（和flask官方文档中内容一样）
-
----
-
-在包含上述两个文件夹的目录下：
-
-Create a `venv` folder:
+目录结构：
 
 ```
-$ python3 -m venv venv
+├── web
+       ├── app
+       ├── instance
+       ├── migrations
+       ├── venv
+       ├── config.py
+       ├── requirements.txt
+       └── run.py
 ```
 
-On Windows:
+1.配置virtualenv环境
 
 ```
-$ py -3 -m venv venv
+# cd <my_path>\Bugu-Backend
+> virtualenv venv #新建环境，名字为venv
+> .\venv\Scripts\activate #激活环境 
+(venv) pip install -r requirements.txt #安装对应的包
 ```
 
-Activate the corresponding environment:
+**注意！**我们使用virtualenv来做python环境隔离和迁移，那么以后所有pip等操作都需要在这个名叫venv的虚拟环境下进行（也就是前面有一个venv的提示符）。如果安装了新的包，在提交代码时需要更新`requirements.txt`，可以手动添加，也可以自动导出当前环境：
+
+到`\venv\Scripts`目录下，导出此环境下安装的包的版本信息 
 
 ```
-$ . venv/bin/activate
+(venv) pip freeze > requirements.txt
 ```
 
-On Windows:
+2.新建MySQL数据库：
 
 ```
-> venv\Scripts\activate
-```
+> mysql -u root -p
+mysql> CREATE USER 'buguadmin'@'localhost' IDENTIFIED WITH mysql_native_password BY 'bugu2020';
 
-Your shell prompt will change to show the name of the activated environment.
+mysql> CREATE DATABASE bugudb;
 
-Within the activated environment, use the following command to install Flask:
+mysql> GRANT ALL PRIVILEGES ON bugudb . * TO 'buguadmin'@'localhost';
 
-```
-(venv) $ pip install Flask
-```
-
-Or use domestic source to speed up downloading module like:
+mysql> flush privileges;
 
 ```
-(venv) $ pip install -i https://mirrors.aliyun.com/pypi/simple Flask
-```
 
-Within the activated environment, install the project's dependencies with:
+这里buguadmin是管理员账户，bugu2020是密码，bududb是数据库名字。
 
-```
-(venv) $ pip install -r requirements.txt
-```
-
-
-
-### Setup
-
----
-
-Set FLASK_APP and set FLASK_ENV(optional, set to 'development' enables debugging):
-
-For Linux and Mac:
+现在数据库里面什么都没有，可以通过运行前端，并在addActivity中添加活动，也可以在命令行中通过mysql语句添加。添加完数据之后，可以导出数据库到文件
 
 ```
-(venv) $ export FLASK_APP=demo_flask
-(venv) $ export FLASK_ENV=development
+mysqldump -u root -p database_name > database_dump.sql
 ```
 
-For Windows cmd, use `set` instead of `export`:
+导入数据库：
 
 ```
-(venv) > set FLASK_APP=demo_flask
-(venv) > set FLASK_ENV=development
+mysql -u root -p new_databast_name < database_dump.sql
 ```
 
-For Windows PowerShell, use `$env:` instead of `export`:
+3.启动。
+
+如果是Windows系统，打开cmd，依次执行：
 
 ```
-(venv) > $env:FLASK_APP = "demo_flask"
-(venv) > $env:FLASK_ENV = "development"
+(venv) set FLASK_CONFIG=development
+(venv) set FLASK_APP=run.py
 ```
 
-Initialize the database, and run flask:
+如果是Linux/Mac系统，打开bash按如下操作
 
 ```
-(venv) $ flask init-db
-Initialized the database.
-(venv) $ flask run
+$export FLASK_CONFIG=development
+$export FLASK_APP=run.py
 ```
 
-You’ll see output similar to this:
+然后运行
 
 ```
-* Serving Flask app "demo_flask"(lazy loading)
-* Environment: development
-* Debug mode: on
-* Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
-* Restarting with stat
-* Debugger is active!
-* Debugger PIN: 299-344-041
+(venv) flask db init
+(venv) flask db migrate
+(venv) flask db upgrade
+
 ```
 
-Visit <http://127.0.0.1:5000/addActivity> or <http://127.0.0.1:5000/getActivityList> in a browser.
+如果在Migrate阶段报错`ERROR [root] Error: Can't locate revision identified by '0066c544c2f8'           `, 那么需要把bududb中的版本信息删除。
 
+```
+>mysql -u root -p
+mysql> use bugudb;
+mysql> drop table alembic_version;
+```
 
+对数据库模型的任何修改，都要再执行flask db migrate, flask db upgrade. 
 
-### 目前实现的功能概述
+最后，运行
 
----
+```
+flask run
+```
 
-demo_flask/templates/以及demo_flask/static/下都是借鉴flask tutorial里的网页前端代码，这里用于简单地测试一下写的后端，也便于前端同学理解接口。
+在浏览器打开`localhost:5000`可以使用GET访问网页。在上面的命令行中可以看到flask的输出.
 
-按照上面的步骤查看 <http://127.0.0.1:5000/addActivity> or <http://127.0.0.1:5000/getActivityList> ，可以简单地测试一下增加活动与查看活动的功能。
 
-![test](test.bmp)
 
-1. addActivity
 
-   填写表单的时候需要注意：
 
-   ```startTime```和```registrationDDL```分别代表（线下）活动开始时间和报名截止时间，目前这版虚弱的后端可以接收的输入字符串格式必须严格是：```YYYY-mm-dd HH:MM:SS```；
+#### 往数据库里面写入
 
-   ```maxParticipantNumber```是整数；
+现在数据库里面什么都没有，可以通过
 
-   ```locationLongitude```和```locationLatitude```可以是浮点数；
+1.推荐下载微信开发者工具，运行前端[[link](https://github.com/BuguTeam/Bugu)]（dev分支）来交互。运行前端，并在addActivity页面中添加活动
 
-   其余表项都接收字符串（可以为空的比如description也尽量不要为空，因为还没有仔细处理，可能会有bug）。
+2.也可以在命令行中通过mysql语句添加。
 
-   点击“Save”后会有刷新反应，应该add成功了。
+```
+>mysql -u root -p
+mysql> use bugudb;
+mysql> ...
+```
 
-2. getActivityList
+3.可以在python中添加管理员账户以及添加任意User/Activity数据。下面是一个例子：
 
-   填写表单的时候需要注意：
+```
+>flask shell
 
-   ```time```表示要查询的最晚的创建时间（这里的时间需要确认一下究竟是哪个时间：创建时间、活动开始时间、报名截止时间），同样需要保证格式：```YYYY-mm-dd HH:MM:SS```（我自己测试的时候，创建活动的时间因为是数据库自己生成的，可能并不准确甚至相差很大，建议这里先填成明天的时间查一下）；
+from app.models import User
+from app import db
+admin = User(username="admin",is_admin=True)
+db.session.add(admin)
+db.session.commit()
+```
 
-   ```limit```表示希望返回的活动个数，整数即可。
 
-   点击“Get”后会返回活动列表，按照活动创建时间（或者之后可以改成按照另外两个时间）从新到旧排序。
 
 
 
-### 与前端的交互
+#### session管理
 
----
+微信小程序的登录流程比较复杂，参考： https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html 
 
-这部分主要参照```demo_flask/__init__.py```。
+一些参考资料：https://www.cnblogs.com/dashucoding/p/9917371.html 
 
-1. addActivity（```@app.route('/addActivity', methods=['GET', 'POST'])```）
+3rd_session：  http://www.yiyongtong.com/archives/view-5954-1.html 
 
-   **对GET的处理**：可以忽略，这里用于返回网页前端的html以测试。
+ 
 
-   **对POST的处理**：
-
-   <u>接收</u>：
-
-   接收的request目前是html的form形式（见```demo_flask/templates/addActivity.html```），不知道小程序是否也有类似的form；其实应该可以接收json格式的request，只是我这边测试的时候还不知道怎么构造这样的request，不过以json格式处理request的代码也留在```demo_flask/__init__.py```中，取消注释即可。
-
-   接收内容如下：
-
-   ```python
-   title = request.form["title"]
-   startTime = request.form["startTime"]
-   registrationDDL = request.form["registrationDDL"]
-   descript = request.form["description"]
-   maxParticipantNumber = int(request.form["maxParticipantNumber"])
-   locationName = request.form["locationName"]
-   locationLongitude = float(request.form["locationLongitude"])
-   locationLatitude = float(request.form["locationLatitude"])
-   locationType = request.form["locationType"]
-   ```
-
-   <u>返回</u>：返回语句目前是```return render_template('addActivity.html')```，即html，可以直接修改或删除。
-
-2. getActivityList（```@app.route('/getActivityList', methods=['GET', 'POST'])```）
-
-   **对GET的处理**：可以忽略，这里用于返回网页前端的html以测试。
-
-   **对POST的处理**：
-
-   <u>接收</u>：
-
-   接收的request目前也是html的form形式（见```demo_flask/templates/getActivityList.html```）；对json格式的request的处理也以注释形式保留。
-
-   接收内容如下：
-
-   ```python
-   limit = int(request.form["limit"])
-   time = request.form["time"]
-   ```
-
-   <u>返回</u>：
-
-   返回语句目前是```return render_template('activities.html', data=jsonData)```，在```demo_flask/templates/activities.html```中对json数据的list```data```读取并显示；如果需要直接返回json数据的list，则```return jsonData```即可。
-
-   返回的list中每一个json对象内容如下：(```row```是从数据库中获取的一行)
-
-   ```python
-   result = {} 
-   result['name'] = str(row[0])
-   result['createTime'] = row[1]
-   result['startTime'] = row[2]
-   result['registrationDDL'] = row[3]
-   result['description'] = str(row[4])
-   result['maxParticipantNumber'] = row[5]
-   result['currentParticipantNumber'] = row[6]
-   result['status'] = str(row[7])
-   location = {}
-   location['locationName'] = str(row[8])
-   location['locationLongitude'] = row[9]
-   location['locationLatitude'] = row[10]
-   location['locationType'] = str(row[11])
-   result['location'] = location
-   ```
-
-
-
-### 数据库
-
----
-
-目前直接使用python提供的sqlite3，之后需要更换更大型的数据库。
-
-1. 数据库定义（见```demo_flask/schema.sql```）
-
-   1. user表：目前没有使用，只是简单定义了一下。
-
-   2. activity表：目前定义的属性如下：
-
-      ```sqlite
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      createTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      title TEXT NOT NULL,
-      startTime TIMESTAMP NOT NULL,
-      registrationDDL TIMESTAMP,
-      descript TEXT,
-      maxParticipantNumber INTEGER,
-      currentParticipantNumber INTEGER NOT NULL DEFAULT 1,
-      stat TEXT NOT NULL DEFAULT '招募人员中',
-      locationName TEXT,
-      locationLongitude REAL,
-      locationLatitude REAL,
-      locationType TEXT
-      ```
-
-      这里我想到的有待讨论的问题是：
-
-      - stat（活动所处状态）：应该是ENUM类型，但是sqlite似乎没有
-      - locationType：需要看小程序的定义，可能也是需要ENUM类型
-      - location的四个属性是否需要聚合，甚至另外开location的表
-
-2. 数据库操作（见```demo_flask/db.py```）
-
-   这个文件和flask文档tutorial中的是一样的，其中定义了一个新的命令行操作```init-db```，在上面Setup中执行，可以初始化数据库。
-
-
-
-### Problems To Be Fixed...
-
----
-
-1. 有关时间：
-
-   三个时间（createTime、startTime、registrationDDL）在数据库中的定义都是TIMESTAMP，但是在存取的时候，我并没有进行字符串与时间戳之间的类型转换；在```where```语句中与输入的查询时间进行比较也感觉是字符串式的比较（因此如果在网页前端输入"2020-4-21 21:40:00"，会认为这个时间比"2020-04-21 21:40:00"晚）
-
-2. Edge Cases的检测与处理：在插入或查询数据库的时候现在基本没有考虑到可能为空的项这种情况
-
-3. 数据库定义的完善或修改
-
-4. 更多功能逻辑的完善...
-
-5. 更多有待发现的bug...

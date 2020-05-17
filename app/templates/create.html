@@ -1,10 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Discussion</title>
+{% endblock %}
+
+{% block body %}
+<h1>Discussions</h1>
+
+    <hr>
+    <h2>Creat New Blog Post:</h2>
+    <form action='/user/activityDisplayer/discussion/create' method='POST'>
+        Title: <input type="text" name="title" id="title">
+        <br>
+        Content: <input type="text" name="content" id="content">
+        <br>
+        Author: <input type="text" name="author" id="author">
+        <br>
+        Activity_id: <input type="text" name="activity_id" id="activity_id">
+        <br>
+        <input type="submit" value="Post">
+    </form>
+    <hr>
+
+{% endblock %}

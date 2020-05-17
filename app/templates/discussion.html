@@ -1,10 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Discussion</title>
+{% endblock %}
+
+{% block body %}
+<h1>Discussions</h1>
+
+    <hr>
+    <a href="/user/activityDisplayer/discussion/create"><h2>Create A New Post</h2></a>
+    <hr>
+    <h2>show blogs:</h2>
+    <form action='/user/activityDisplayer/discussion' method='POST'>
+        Activity_id: <input type="text" name="activity_id" id="activity_id">
+        <input type="submit" value="Search">
+    </form>
+    <hr>
+
+    {% for post in posts %}
+        <h2>{{ post.title }}</h2>
+
+        {% if post.author %}
+            <h3>By: {{ post.author }}</h3>
+        {% else %}
+            <h3>By: N/A</h3>
+        {% endif %}
+
+        {% if post.activity_id %}
+            <h3>In activity: {{ post.activity_id }}</h3>
+        {% else %}
+            <h3>In no activity</h3>
+        {% endif %}
+
+        <p>{{ post.content }}</p>
+        <a href="/user/activityDisplayer/discussion/delete/{{post.id}}">Delete</a>
+        <a href="/user/activityDisplayer/discussion/edit/{{post.id}}">Edit</a>
+        <hr>
+    {% endfor %}
+
+{% endblock %}

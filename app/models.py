@@ -3,6 +3,10 @@
 import datetime
 from app import db
 
+user_activity = db.Table('user_activity',
+                            db.Column('user_id', db.String(128), db.ForeignKey('users.openid'), primary_key=True),
+                            db.Column('activity_id', db.Integer, db.ForeignKey('activities.id'), primary_key=True))
+
 class User(db.Model):
     """
     Create a user table
@@ -16,7 +20,7 @@ class User(db.Model):
     avatar_url = db.Column(db.String(128))
     
     is_admin = db.Column(db.Boolean, default=False)
-    participated_activities = db.relationship('Activity', backref='users', lazy='dynamic')
+    participated_activities = db.relationship('Activity', secondary=user_activity, backref='participants', lazy='dynamic')
 
 
 class Activity(db.Model):
@@ -36,6 +40,8 @@ class Activity(db.Model):
     locationLongitude = db.Column(db.Float())
     locationLatitude = db.Column(db.Float())
     locationType = db.Column(db.String(10))
+
+    status = db.Column(db.String(20), nullable=False, default="招募人员中")
     
     initiator_id = db.Column(db.String(128), db.ForeignKey('users.openid'))
 

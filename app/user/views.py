@@ -5,7 +5,7 @@ from flask import request, jsonify, render_template, redirect
 from . import user
 from .. import db
 from ..models import User, Activity, Discussion
-from ..auth import gen_openid
+from ..auth import gen_openid, gen_3rd_session
 
 
 # 把字符串转成datetime
@@ -22,7 +22,7 @@ def datetime_toString(dt):
 
 @user.route('/addActivity', methods=['GET', 'POST'])
 def addActivity():
-    
+    print(addActivity)
     if request.method == 'POST':
         title = str(json.loads(request.values.get("name")))
         startTime = str(json.loads(request.values.get("startTime")))+":00"
@@ -34,7 +34,7 @@ def addActivity():
         locationLongitude = float(location["longitude"])
         locationLatitude = float(location["latitude"])
         locationType = str(location["type"])
-        print(location)
+        # print(location)
 
         if registrationDDL == "":
             registrationDDL = startTime
@@ -58,6 +58,10 @@ def addActivity():
             locationLatitude=locationLatitude,
             locationType=locationType,
             initiator_id=openid)
+
+        # act.participants.append(initiator)
+        initiator.participated_activities.append(act)
+
         db.session.add(act)
         db.session.commit()
 
@@ -83,12 +87,15 @@ def getActivityList():
         print('------lastActivityTime: ', lastActivityTime)
         
         alist = []
+        # TODO: also need location filtering
         if len(lastActivityTime) > 0:
             activities = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime)).order_by(Activity.startTime.desc()).limit(limit).all()
         else:
             activities = Activity.query.order_by(Activity.startTime.desc()).limit(limit).all()
             
         for a in activities:
+            # TODO: update STATUS of activity before return
+
             a_dict = {
                 'id': a.id,
                 'name': a.title, 
@@ -101,8 +108,11 @@ def getActivityList():
                     'name': a.locationName,
                     'longitude': a.locationLongitude,
                     'latitude': a.locationLatitude,
+                    'type': a.locationType,
                 },
-                'password': "",
+                'status': a.status,
+                'initiator': a.initiator_id,
+                'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
                 
             }
             alist.append(a_dict)
@@ -116,6 +126,101 @@ def getActivityList():
 
     else:
         return '''visiting /user/getActivityList: Hi there! '''
+
+
+@user.route('/UserActivityHistory', methods=['GET', 'POST'])
+def UserActivityHistory():
+    print(UserActivityHistory)
+    if request.method == 'POST':
+        print(request.values)
+        character = str(json.loads(request.values.get('character')))
+        status = str(json.loads(request.values.get('status')))
+        limit = int(json.loads(request.values.get('limit')))
+        third_session = request.values.get('third_session')
+        lastActivityTime = str(json.loads(request.values.get('lastActivityTime')))
+        openid = gen_openid(third_session)
+        user = db.session.query(User).filter(User.openid==openid).first()
+
+        print('------character: ', character)
+        print('------status: ', status)
+        print('------limit: ', limit)
+        print('third_session: ', third_session)
+        print('openid: ', openid)
+        print('------lastActivityTime: ', lastActivityTime)
+        
+        activities = user.participated_activities.order_by(Activity.startTime.desc())
+
+        cnt = 0
+        alist = []
+            
+        for a in activities:
+            if len(lastActivityTime) > 0 and a.startTime >= string_toDatetime(lastActivityTime):
+                continue
+
+            if character == "initiator" and a.initiator_id != openid:
+                continue
+            if character == "participant" and a.initiator_id == openid:
+                continue
+
+            # update STATUS of activity before return
+            # "招募人员中", "招募完毕，等待活动开始", "活动进行中", "活动已结束", "已取消", "全部"
+            currentTime = datetime.datetime.now()
+            update = False
+            if a.status == "招募人员中":
+                if a.registrationDDL <= currentTime:
+                    a.status = "招募完毕，等待活动开始"
+                    update = True
+                if a.startTime <= currentTime:
+                    a.status = "活动进行中"
+                    update = True
+            elif a.status == "招募完毕，等待活动开始":
+                if a.startTime <= currentTime:
+                    a.status = "活动进行中"
+                    update = True
+            
+            if update:
+                res = db.session.query(Activity).filter(Activity.id == a.id).update({"status":a.status})
+                db.session.commit()
+            
+            if status != "全部" and status != a.status:
+                continue
+
+            cnt += 1
+
+            a_dict = {
+                'id': a.id,
+                'name': a.title, 
+                'startTime': datetime_toTimestamp(a.startTime), 
+                'registrationDDL': datetime_toTimestamp(a.registrationDDL),
+                'maxParticipantNumber': a.maxParticipantNumber,
+                'currentParticipantNumber': a.currentParticipantNumber,
+                'description': a.descript,
+                'location': {
+                    'name': a.locationName,
+                    'longitude': a.locationLongitude,
+                    'latitude': a.locationLatitude,
+                    'type': a.locationType,
+                },
+                'status': a.status,
+                'initiator': a.initiator_id,
+                'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
+            }
+            alist.append(a_dict)
+
+            if cnt == limit:
+                lastActivityTime = datetime_toString(a.startTime)
+                break
+
+        jsonData = {}
+        jsonData['alist'] = alist
+        jsonData['lastActivityTime'] = lastActivityTime
+        print('------returns actlist: ', jsonData)
+        return json.dumps(jsonData, ensure_ascii=False)
+
+    else:
+        return '''visiting /user/getActivityList: Hi there! '''
+
+
 
 @user.route('/activityDisplayer', methods=['GET'])
 def activityDisplay():

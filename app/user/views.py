@@ -36,7 +36,7 @@ def addActivity():
         locationType = str(location["type"])
         # print(location)
 
-        if registrationDDL == "":
+        if registrationDDL == ":00":
             registrationDDL = startTime
         if descript == None: descript = ""
         

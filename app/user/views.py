@@ -59,7 +59,9 @@ def addActivity():
             locationType=locationType,
             initiator_id=openid)
 
+        # act.participants.append(initiator)
         initiator.participated_activities.append(act)
+
         db.session.add(act)
         # db.session.commit()
 

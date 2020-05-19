@@ -36,7 +36,7 @@ def addActivity():
         locationType = str(location["type"])
         # print(location)
 
-        if registrationDDL == "":
+        if registrationDDL == ":00":
             registrationDDL = startTime
         if descript == None: descript = ""
         
@@ -59,11 +59,9 @@ def addActivity():
             locationType=locationType,
             initiator_id=openid)
 
-        # act.participants.append(initiator)
         initiator.participated_activities.append(act)
-
         db.session.add(act)
-        db.session.commit()
+        # db.session.commit()
 
         print('Successfully Created')
         return 'Successfully Created'
@@ -152,9 +150,10 @@ def UserActivityHistory():
 
         cnt = 0
         alist = []
+        ceilTime = lastActivityTime
             
         for a in activities:
-            if len(lastActivityTime) > 0 and a.startTime >= string_toDatetime(lastActivityTime):
+            if len(ceilTime) > 0 and a.startTime >= string_toDatetime(ceilTime):
                 continue
 
             if character == "initiator" and a.initiator_id != openid:
@@ -180,7 +179,7 @@ def UserActivityHistory():
             
             if update:
                 res = db.session.query(Activity).filter(Activity.id == a.id).update({"status":a.status})
-                db.session.commit()
+                # db.session.commit()
             
             if status != "全部" and status != a.status:
                 continue
@@ -207,8 +206,10 @@ def UserActivityHistory():
             }
             alist.append(a_dict)
 
-            if cnt == limit:
+            if len(lastActivityTime) == 0 or string_toDatetime(lastActivityTime) > a.startTime:
                 lastActivityTime = datetime_toString(a.startTime)
+
+            if cnt == limit:
                 break
 
         jsonData = {}

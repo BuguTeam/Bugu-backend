@@ -12,9 +12,9 @@ from ..auth import gen_openid, gen_3rd_session
 def string_toDatetime(string):
     return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
 
-# 把datetime类型转成时间戳形式
+# 把datetime类型转成13位的时间戳形式
 def datetime_toTimestamp(dateTime):
-    return time.mktime(dateTime.timetuple())
+    return time.mktime(dateTime.timetuple()) * 1000.0 + (dateTime.microsecond / 1000.0)
 
 # 把datetime类型转成string
 def datetime_toString(dt):
@@ -153,8 +153,8 @@ def UserActivityHistory():
         cnt = 0
         alist = []
         ceilTime = lastActivityTime
-            
         for a in activities:
+            print('  db results: ', a)
             if len(ceilTime) > 0 and a.startTime >= string_toDatetime(ceilTime):
                 continue
 

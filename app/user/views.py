@@ -311,7 +311,7 @@ def joinActivity():
     else:
         return '''visiting /user/joinActivity: Hi there! '''
 
-@user.route('exitfromActivity', methods=['GET', 'POST'])
+@user.route('/exitfromActivity', methods=['GET', 'POST'])
 def exitfromActivity():
     print(exitfromActivity)
     if request.method == 'POST':

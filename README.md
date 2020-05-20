@@ -47,6 +47,8 @@ mysql> GRANT ALL PRIVILEGES ON bugubackend_test . * TO 'buguadmin'@'localhost';
 (venv) python tests.py
 ```
 
+需要注意目前的两个测试模块```test_addActivity_view```和```test_UserActivityHistory_view```中，所用的测试数据与测试时的时间相关，所以你现在执行时可能测试会fail，在编写你的测试模块时，注意将这两个模块注释掉。
+
 测试代码（```tests.py```）相关注意点：
 
 1.参考：https://scotch.io/tutorials/build-a-crud-web-app-with-python-and-flask-part-three#toc-tests

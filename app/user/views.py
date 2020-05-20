@@ -292,7 +292,7 @@ def joinActivity():
             print('Fail to join')
             return 'Fail to join'
         # Check if maximum participant number has been met
-        if activity.maxParticipantNumber != -1 && activity.maxParticipantNumber <= activity.currentParticipantNumber:
+        if activity.maxParticipantNumber != -1 and activity.maxParticipantNumber <= activity.currentParticipantNumber:
             print('Fail to join')
             return 'Fail to join'
         # Check the status of activity

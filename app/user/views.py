@@ -349,13 +349,15 @@ def joinActivity():
         res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
         user.participated_activities.append(activity)
         res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
+	activity.currentParticipantNumber += 1
+	res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber":activity.currentParticipantNumber})
         print('Successfully join')
         return 'Successfully join'
 		
     else:
         return '''visiting /user/joinActivity: Hi there! '''
 
-@user.route('exitfromActivity', methods=['GET', 'POST'])
+@user.route('/exitfromActivity', methods=['GET', 'POST'])
 def exitfromActivity():
     print(exitfromActivity)
     if request.method == 'POST':

@@ -274,3 +274,66 @@ def edit_post(id):
         return redirect('/user/activityDisplayer/discussion')
     else:
         return render_template('edit.html', post=post)
+    
+@user.route('/joinActivity', methods=['GET', 'POST'])
+def joinActivity():
+    print(joinActivity)
+    if request.method == 'POST':
+        third_session = request.values.get('third_session')
+        openid = gen_openid(third_session)
+        activity_id = int(json.loads(request.values.get("activity_id")))
+		
+        user = db.session.query(User).filter(User.openid == openid).first()
+        activity = db.session.query(Activity).filter(Activity.id == activity_id).first()
+		
+        # Assume location filter already done in getActivityList
+        # Check whether registration deadline has passed
+        if activity.registrationDDL <= datetime.datetime.now():
+            print('Fail to join')
+            return 'Fail to join'
+        # Check if maximum participant number has been met
+        if activity.maxParticipantNumber != -1 && activity.maxParticipantNumber <= activity.currentParticipantNumber:
+            print('Fail to join')
+            return 'Fail to join'
+        # Check the status of activity
+        if activity.status != "招募人员中":
+            print('Fail to join')
+            return 'Fail to join'
+		
+        # All criteria met, add the user
+        activity.participants.append(user)
+        res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
+        user.participated_activities.append(activity)
+        res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
+        print('Successfully join')
+        return 'Successfully join'
+		
+    else:
+        return '''visiting /user/joinActivity: Hi there! '''
+
+@user.route('exitfromActivity', methods=['GET', 'POST'])
+def exitfromActivity():
+    print(exitfromActivity)
+    if request.method == 'POST':
+        third_session = request.values.get('third_session')
+        openid = gen_openid(third_session)
+        activity_id = int(json.loads(request.values.get("activity_id")))
+		
+        user = db.session.query(User).filter(User.openid == openid).first()
+        activity = db.session.query(Activity).filter(Activity.id == activity_id).first()
+		
+        activity.participants.remove(user)
+        res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
+        user.participated_activities.remove(activity)
+        res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
+		
+        activity.currentParticipantNumber -= 1
+        res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber":activity.currentParticipantNumber})
+        if activity.currentParticipantNumber == 0 or activity.initiator_id == user.openid:
+            activity.status = "已取消"
+            res4 = db.session.query(Activity).filter(Activity.id == activity.id).update({"status":activity.status})
+        print('Successfully exit')
+        return 'Successfully exit'
+
+    else:
+        return '''visiting /user/exitfromActivity: Hi there! '''

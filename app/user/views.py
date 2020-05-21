@@ -155,7 +155,7 @@ def getActivityList():
                     'type': a.locationType,
                 },
                 'status': a.status,
-                'initiator': a.initiator_id,
+                'initiator': bytes.decode(gen_3rd_session(a.initiator_id)),
                 'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
                 
             }
@@ -247,7 +247,7 @@ def UserActivityHistory():
                     'type': a.locationType,
                 },
                 'status': a.status,
-                'initiator': a.initiator_id,
+                'initiator': bytes.decode(gen_3rd_session(a.initiator_id)),
                 'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
             }
             alist.append(a_dict)
@@ -349,8 +349,9 @@ def joinActivity():
         res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
         user.participated_activities.append(activity)
         res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
-	activity.currentParticipantNumber += 1
-	res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber":activity.currentParticipantNumber})
+        activity.currentParticipantNumber += 1
+        res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber": activity.currentParticipantNumber})
+        db.session.commit()
         print('Successfully join')
         return 'Successfully join'
 		

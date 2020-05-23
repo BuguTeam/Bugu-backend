@@ -28,7 +28,6 @@ def gen_openid(third_session):
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        
         # wx.login接口获得的临时登陆凭证jscode
         jscode = request.get_json()['code']
         secret = current_app.config['APP_SECRET']
@@ -38,9 +37,9 @@ def login():
         
         
         # ref: https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html
-        res = requests.get('https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code' % (appid, secret, jscode)).content
-        res = json.loads(res)
-
+        res = requests.get('https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code' % (appid, secret, jscode))
+        #res = json.loads(res)
+        res=res.json()
         session_key = res['session_key']
         openid = res['openid']
         print('openid: ', openid)

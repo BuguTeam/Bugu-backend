@@ -2,19 +2,27 @@ import json
 import time
 import datetime
 from flask import request, jsonify, render_template, redirect
+import math
 from . import user
 from .. import db
 from ..models import User, Activity, Discussion
 from ..auth import gen_openid, gen_3rd_session
 
+# 把1km(暂定)转换成纬度差
+def dis_1kmToLatitude():
+    return 1.0 / 111.0
+
+# 把1km(暂定)转换成经度差
+def dis_1kmToLongitude(curLatitude):
+    return 1.0 / (111.0 * abs(math.cos(curLatitude / 180.0 * math.pi)))
 
 # 把字符串转成datetime
 def string_toDatetime(string):
     return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
 
-# 把datetime类型转成时间戳形式
+# 把datetime类型转成13位的时间戳形式
 def datetime_toTimestamp(dateTime):
-    return time.mktime(dateTime.timetuple())
+    return time.mktime(dateTime.timetuple()) * 1000.0 + (dateTime.microsecond / 1000.0)
 
 # 把datetime类型转成string
 def datetime_toString(dt):
@@ -81,20 +89,56 @@ def getActivityList():
         third_session = request.values.get('third_session')
         lastActivityTime = str(json.loads(request.values.get('lastActivityTime')))
         openid = gen_openid(third_session)
+        
+        user_longitude = float(json.loads(request.values.get('longitude')))
+        user_latitude = float(json.loads(request.values.get('latitude')))
         print('------limit: ', limit)
         print('third_session: ', third_session)
         print('openid: ', openid)
         print('------lastActivityTime: ', lastActivityTime)
+        print('------user_longitude: ', user_longitude)
+        print('------user_latitude: ', user_latitude)
         
         alist = []
-        # TODO: also need location filtering
+        
+        print('------: ', dis_1kmToLatitude())
+        print('------: ', dis_1kmToLongitude(user_latitude))
+        
+        # also need location filtering
         if len(lastActivityTime) > 0:
-            activities = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime)).order_by(Activity.startTime.desc()).limit(limit).all()
+            activities_noLocation = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime), Activity.locationName == '\"不限定位置\"').all()
+            activities_withinRange = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime), Activity.locationLongitude < user_longitude + dis_1kmToLongitude(user_latitude), Activity.locationLongitude > user_longitude - dis_1kmToLongitude(user_latitude), Activity.locationLatitude < user_latitude + dis_1kmToLatitude(), Activity.locationLatitude > user_latitude - dis_1kmToLatitude(), Activity.locationName != '\"不限定位置\"').all()
         else:
-            activities = Activity.query.order_by(Activity.startTime.desc()).limit(limit).all()
+            activities_noLocation = Activity.query.filter(Activity.locationName == '\"不限定位置\"').all()
+            activities_withinRange = Activity.query.filter(Activity.locationLongitude < user_longitude + dis_1kmToLongitude(user_latitude), Activity.locationLongitude > user_longitude - dis_1kmToLongitude(user_latitude), Activity.locationLatitude < user_latitude + dis_1kmToLatitude(), Activity.locationLatitude > user_latitude - dis_1kmToLatitude(), Activity.locationName != '\"不限定位置\"').all()
             
+        activities = activities_noLocation + activities_withinRange
+        
+        def getStartTime(a):
+            return a.startTime
+            
+        activities.sort(key=getStartTime, reverse=True)
+        activities = activities[0:limit]
+        
         for a in activities:
-            # TODO: update STATUS of activity before return
+            # update STATUS of activity before return
+            currentTime = datetime.datetime.now()
+            update = False
+            if a.status == "招募人员中":
+                if a.registrationDDL <= currentTime:
+                    a.status = "招募完毕，等待活动开始"
+                    update = True
+                if a.startTime <= currentTime:
+                    a.status = "活动进行中"
+                    update = True
+            elif a.status == "招募完毕，等待活动开始":
+                if a.startTime <= currentTime:
+                    a.status = "活动进行中"
+                    update = True
+            
+            if update:
+                res = db.session.query(Activity).filter(Activity.id == a.id).update({"status":a.status})
+                db.session.commit()
 
             a_dict = {
                 'id': a.id,
@@ -111,7 +155,7 @@ def getActivityList():
                     'type': a.locationType,
                 },
                 'status': a.status,
-                'initiator': a.initiator_id,
+                'initiator': bytes.decode(gen_3rd_session(a.initiator_id)),
                 'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
                 
             }
@@ -203,7 +247,7 @@ def UserActivityHistory():
                     'type': a.locationType,
                 },
                 'status': a.status,
-                'initiator': a.initiator_id,
+                'initiator': bytes.decode(gen_3rd_session(a.initiator_id)),
                 'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
             }
             alist.append(a_dict)
@@ -274,3 +318,69 @@ def edit_post(id):
         return redirect('/user/activityDisplayer/discussion')
     else:
         return render_template('edit.html', post=post)
+    
+@user.route('/joinActivity', methods=['GET', 'POST'])
+def joinActivity():
+    print(joinActivity)
+    if request.method == 'POST':
+        third_session = request.values.get('third_session')
+        openid = gen_openid(third_session)
+        activity_id = int(json.loads(request.values.get("activity_id")))
+		
+        user = db.session.query(User).filter(User.openid == openid).first()
+        activity = db.session.query(Activity).filter(Activity.id == activity_id).first()
+		
+        # Assume location filter already done in getActivityList
+        # Check whether registration deadline has passed
+        if activity.registrationDDL <= datetime.datetime.now():
+            print('Fail to join')
+            return 'Fail to join'
+        # Check if maximum participant number has been met
+        if activity.maxParticipantNumber != -1 and activity.maxParticipantNumber <= activity.currentParticipantNumber:
+            print('Fail to join')
+            return 'Fail to join'
+        # Check the status of activity
+        if activity.status != "招募人员中":
+            print('Fail to join')
+            return 'Fail to join'
+		
+        # All criteria met, add the user
+        activity.participants.append(user)
+        res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
+        user.participated_activities.append(activity)
+        res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
+        activity.currentParticipantNumber += 1
+        res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber": activity.currentParticipantNumber})
+        db.session.commit()
+        print('Successfully join')
+        return 'Successfully join'
+		
+    else:
+        return '''visiting /user/joinActivity: Hi there! '''
+
+@user.route('/exitfromActivity', methods=['GET', 'POST'])
+def exitfromActivity():
+    print(exitfromActivity)
+    if request.method == 'POST':
+        third_session = request.values.get('third_session')
+        openid = gen_openid(third_session)
+        activity_id = int(json.loads(request.values.get("activity_id")))
+		
+        user = db.session.query(User).filter(User.openid == openid).first()
+        activity = db.session.query(Activity).filter(Activity.id == activity_id).first()
+		
+        activity.participants.remove(user)
+        res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
+        user.participated_activities.remove(activity)
+        res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
+		
+        activity.currentParticipantNumber -= 1
+        res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber":activity.currentParticipantNumber})
+        if activity.currentParticipantNumber == 0 or activity.initiator_id == user.openid:
+            activity.status = "已取消"
+            res4 = db.session.query(Activity).filter(Activity.id == activity.id).update({"status":activity.status})
+        print('Successfully exit')
+        return 'Successfully exit'
+
+    else:
+        return '''visiting /user/exitfromActivity: Hi there! '''

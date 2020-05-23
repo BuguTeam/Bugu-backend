@@ -45,18 +45,17 @@ class Activity(db.Model):
     
     initiator_id = db.Column(db.String(128), db.ForeignKey('users.openid'))
 
-class Discussion(db.Model):
-    __tablename__ = 'discussions'
+class Message(db.Model):
+    __tablename__ = 'messages'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    title = db.Column(db.String(60), nullable=False)
-    createtime = db.Column(db.TIMESTAMP(True), nullable=False, default=datetime.datetime.now)
-    content = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(60))
-
-    activity_id = db.Column(db.Integer, db.ForeignKey('activities.id'))
+    createTime = db.Column(db.TIMESTAMP(True), nullable=False, default=datetime.datetime.now)
+    comment = db.Column(db.Text, nullable=False)
+    replyCommentId = db.Column(db.Integer)
+    userId = db.Column(db.String(128), db.ForeignKey('users.openid'))
+    sourceId = db.Column(db.Integer, db.ForeignKey('activities.id'))
 
     def __repr__(self):
-        return 'Discussion ' + str(self.id)
+        return 'Messages ' + str(self.id)
 
 

@@ -1,10 +1,10 @@
 import json
 import time
 import datetime
-from flask import request, jsonify, render_template, redirect
+from flask import request, jsonify, render_template
 from . import user
 from .. import db
-from ..models import User, Activity, Discussion
+from ..models import User, Activity, Message
 from ..auth import gen_openid, gen_3rd_session
 
 
@@ -231,46 +231,91 @@ def activityDisplay():
 
 @user.route('/activityDisplayer/discussion', methods=['GET', 'POST'])
 def discuss():
-
+    print(request.values)
     if request.method == 'POST':
-        post_activity = int(request.form['activity_id'])
-        all_posts = Discussion.query.filter(Discussion.activity_id==post_activity).order_by(Discussion.createtime).all()
-        return render_template('discussion.html', posts=all_posts)
+        sourceid = int(json.loads(request.values.get('sourceid')))
+        limited = int(json.loads(request.values.get('limited')))
+        offset = int(json.loads(request.values.get('offset')))
+        comments = Message.query.filter(Message.sourceid==sourceid).order_by(Message.createtime).all()
+        clist = []
+        cnt = 0
+
+        limited += offset + 1
+        # pick c in [offset, limited)
+        for c in comments:
+            cnt += 1
+            if (cnt <= offset):
+                continue
+            if( cnt == limited):
+                break
+
+            poster = User.query.filter(User.openid==c.userId).first()
+            replycomment = Message.query.filter(Message.id==c.replyCommentId).first()
+            replyer = User.query.filter(User.openid==replycomment.userId)
+
+            c_dict = {
+                'sourceId': c.souceId,
+                'createTime': c.createTime,
+                'comment': c.comment,
+                'replyCommentId': c.replyCommentId,
+                'replyUserName': replyer.nickname,
+                'third_session': gen_3rd_session(c.userId),
+                'userPhoto': poster.avatar_url
+            }
+            clist.append(c_dict)
+
+        jsonData = {}
+        jsonData['clist'] = clist
+        return json.dumps(jsonData, ensure_ascii=False)
+
     else:
-        all_posts = Discussion.query.order_by(Discussion.createtime).all()
-        return render_template('discussion.html', posts=all_posts)
+        return '/activityDisplayer/discussion Hi here'
 
 @user.route('/activityDisplayer/discussion/create', methods=['GET', 'POST'])
 def create():
 
     if request.method == 'POST':
-        post_title = request.form['title']
-        post_content = request.form['content']
-        post_author = request.form['author']
-        post_activity = request.form['activity_id']
-        new_post = Discussion(title=post_title, content=post_content, author=post_author, activity_id=int(post_activity))
-        db.session.add(new_post)
+        sourceId = int(json.loads(request.values.get("sourceId")))
+        comment = str(json.loads(request.values.get("comment")))
+        replyCommentId = int(json.loads(request.values.get("replyCommentId")))
+
+        # if cannot find replyCommentId in db
+        replycomment = Message.query.filter(Message.id==replyCommentId).first()
+        if(replycomment == []):
+            return 'Message Created Fail: no such replyComment'
+
+        third_session = str(json.loads(request.values.get("third_session")))
+        userId = gen_openid(third_session)
+        new_message = Message(comment=comment, replyCommentId=replyCommentId, userId=userId, sourceId=sourceId)
+        db.session.add(new_message)
         db.session.commit()
-        return redirect('/user/activityDisplayer/discussion')
+        return 'Message Successfully Created'
     else:
-        return render_template('create.html')
+        return '/activityDisplayer/discussion/create Hi here'
 
 @user.route('/activityDisplayer/discussion/delete/<int:id>', methods=['GET', 'POST'])
 def delete_post(id):
-    post = Discussion.query.get_or_404(id)
-    db.session.delete(post)
-    db.session.commit()
-    return redirect('/user/activityDisplayer/discussion')
+    message = Message.query.get_or_404(id)
+    third_session = str(json.loads(request.values.get("third_session")))
+    userId = gen_openid(third_session)
+    if(message.userId != userId):
+        return ''' Delete Fail: Cannot delete other's message '''
+    else:
+        db.session.delete(message)
+        db.session.commit()
+        return '/activityDisplayer/discussion/delete/<int:id> Hi here'
 
 @user.route('/activityDisplayer/discussion/edit/<int:id>', methods=['GET', 'POST'])
 def edit_post(id):
-    post = Discussion.query.get_or_404(id)
+    message = Message.query.get_or_404(id)
     if request.method == 'POST':
-        post.title = request.form['title']
-        post.content = request.form['content']
-        post.author = request.form['author']
-        post.activity_id = int(request.form['activity_id'])
-        db.session.commit()
-        return redirect('/user/activityDisplayer/discussion')
+        third_session = str(json.loads(request.values.get("third_session")))
+        userId = gen_openid(third_session)
+        if(userId != message.userId):
+            return ''' Edit Fail: Cannot edit other's message '''
+        else:
+            message.comment = str(json.loads(request.values.get("comment")))
+            db.session.commit()
+            return 'Edit Successfully'
     else:
-        return render_template('edit.html', post=post)
+        return '/activityDisplayer/discussion/edit/<int:id> Hi here'

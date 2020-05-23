@@ -196,8 +196,8 @@ class TestViews(TestBase):
 
         act1 = Activity(
             title='act1',
-            startTime='2020-05-20 15:13:00',
-            registrationDDL='2020-05-19 15:13:00',
+            startTime='2020-05-24 15:13:00',
+            registrationDDL='2020-05-23 15:13:00',
             descript='this is act1.',
             maxParticipantNumber=5,
             currentParticipantNumber=1,
@@ -212,8 +212,8 @@ class TestViews(TestBase):
 
         act2 = Activity(
             title='act2',
-            startTime='2020-05-20 15:13:00',
-            registrationDDL='2020-05-20 15:13:00',
+            startTime='2020-05-24 15:13:00',
+            registrationDDL='2020-05-24 15:13:00',
             descript='this is act2.',
             maxParticipantNumber=3,
             currentParticipantNumber=1,
@@ -228,8 +228,8 @@ class TestViews(TestBase):
 
         act3 = Activity(
             title='act3',
-            startTime='2020-05-19 17:13:00',
-            registrationDDL='2020-05-19 15:13:00',
+            startTime='2020-05-23 17:13:00',
+            registrationDDL='2020-05-23 15:13:00',
             descript='',
             maxParticipantNumber=2,
             currentParticipantNumber=1,
@@ -244,8 +244,8 @@ class TestViews(TestBase):
 
         act4 = Activity(
             title='act4',
-            startTime='2020-05-19 17:13:00',
-            registrationDDL='2020-05-19 17:13:00',
+            startTime='2020-05-23 17:13:00',
+            registrationDDL='2020-05-23 17:13:00',
             descript='',
             maxParticipantNumber=7,
             currentParticipantNumber=1,
@@ -265,7 +265,7 @@ class TestViews(TestBase):
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-21 17:13:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 17:13:00'),
                                         'status': json.dumps('全部'),
                                         'character': json.dumps('both'),
                                     }
@@ -292,14 +292,14 @@ class TestViews(TestBase):
         assert data['alist'][1]['name'] == 'act2'
         assert data['alist'][2]['name'] == 'act3'
         assert data['alist'][3]['name'] == 'act4'
-        assert data['lastActivityTime'] == '2020-05-19 17:13:00'
+        assert data['lastActivityTime'] == '2020-05-23 17:13:00'
 
         # test2: limit < total cnt
         response = self.client.post(url_for('user.UserActivityHistory'),
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('1'),
-                                        'lastActivityTime': json.dumps('2020-05-21 17:13:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 17:13:00'),
                                         'status': json.dumps('全部'),
                                         'character': json.dumps('both'),
                                     }
@@ -311,14 +311,14 @@ class TestViews(TestBase):
 
         assert len(data['alist']) == 1
         assert data['alist'][0]['name'] == 'act1'
-        assert data['lastActivityTime'] == '2020-05-20 15:13:00'
+        assert data['lastActivityTime'] == '2020-05-24 15:13:00'
 
         # test3: lastActivityTime < a particular activity
         response = self.client.post(url_for('user.UserActivityHistory'),
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-20 00:00:00'),
+                                        'lastActivityTime': json.dumps('2020-05-24 00:00:00'),
                                         'status': json.dumps('全部'),
                                         'character': json.dumps('both'),
                                     }
@@ -331,14 +331,14 @@ class TestViews(TestBase):
         assert len(data['alist']) == 2
         assert data['alist'][0]['name'] == 'act3'
         assert data['alist'][1]['name'] == 'act4'
-        assert data['lastActivityTime'] == '2020-05-19 17:13:00'
+        assert data['lastActivityTime'] == '2020-05-23 17:13:00'
 
         # test4: status == "招募人员中"
         response = self.client.post(url_for('user.UserActivityHistory'),
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-21 00:00:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 00:00:00'),
                                         'status': json.dumps('招募人员中'),
                                         'character': json.dumps('both'),
                                     }
@@ -350,14 +350,14 @@ class TestViews(TestBase):
 
         assert len(data['alist']) == 1
         assert data['alist'][0]['name'] == 'act2'
-        assert data['lastActivityTime'] == '2020-05-20 15:13:00'
+        assert data['lastActivityTime'] == '2020-05-24 15:13:00'
 
         # test5: status == "活动进行中"
         response = self.client.post(url_for('user.UserActivityHistory'),
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-21 00:00:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 00:00:00'),
                                         'status': json.dumps('活动进行中'),
                                         'character': json.dumps('both'),
                                     }
@@ -370,14 +370,14 @@ class TestViews(TestBase):
         assert len(data['alist']) == 2
         assert data['alist'][0]['name'] == 'act3'
         assert data['alist'][1]['name'] == 'act4'
-        assert data['lastActivityTime'] == '2020-05-19 17:13:00'
+        assert data['lastActivityTime'] == '2020-05-23 17:13:00'
 
         # test5: status == "招募完毕，等待活动开始"
         response = self.client.post(url_for('user.UserActivityHistory'),
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-21 00:00:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 00:00:00'),
                                         'status': json.dumps('招募完毕，等待活动开始'),
                                         'character': json.dumps('both'),
                                     }
@@ -389,14 +389,14 @@ class TestViews(TestBase):
 
         assert len(data['alist']) == 1
         assert data['alist'][0]['name'] == 'act1'
-        assert data['lastActivityTime'] == '2020-05-20 15:13:00'
+        assert data['lastActivityTime'] == '2020-05-24 15:13:00'
 
         # test6: character == "initiator"
         response = self.client.post(url_for('user.UserActivityHistory'),
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-21 00:00:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 00:00:00'),
                                         'status': json.dumps('全部'),
                                         'character': json.dumps('initiator'),
                                     }
@@ -413,7 +413,7 @@ class TestViews(TestBase):
                                     data={
                                         'third_session': 'aaasession',
                                         'limit': json.dumps('4'),
-                                        'lastActivityTime': json.dumps('2020-05-21 00:00:00'),
+                                        'lastActivityTime': json.dumps('2020-05-25 00:00:00'),
                                         'status': json.dumps('全部'),
                                         'character': json.dumps('participant'),
                                     }

@@ -5,6 +5,11 @@
 # Private Config
 instance/config.py
   
+# Server
+*.out
+/uwsgi
+/uwsgi.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

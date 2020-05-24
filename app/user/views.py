@@ -28,6 +28,14 @@ def datetime_toTimestamp(dateTime):
 def datetime_toString(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
+# 检查openid对应的用户是否参与了act活动，act是数据库中的一个Activity对象
+def checkIfParticipated(openid, act):
+    return openid in [u.openid for u in act.participants]
+
+# 检查openid对应的用户是否发起了act活动，act是数据库中的一个Activity对象
+def checkIfInitiated(openid, act):
+    return openid == act.initiator_id
+    
 @user.route('/addActivity', methods=['GET', 'POST'])
 def addActivity():
     print(addActivity)
@@ -72,13 +80,12 @@ def addActivity():
 
         db.session.add(act)
         db.session.commit()
+        print('created activity: id=', act.id, ' participants: ', [u.openid for u in act.participants])
 
         print('Successfully Created')
         return 'Successfully Created'
     
     return '''visiting /user/addActivity: Hi there! '''
-
-
 
 @user.route('/getActivityList', methods=['GET', 'POST'])
 def getActivityList():
@@ -155,9 +162,8 @@ def getActivityList():
                     'type': a.locationType,
                 },
                 'status': a.status,
-                'initiator': bytes.decode(gen_3rd_session(a.initiator_id)),
-                'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
-                
+                'hasParticipated': checkIfParticipated(openid, a),
+                'hasInitiated': checkIfInitiated(openid, a),
             }
             alist.append(a_dict)
             if len(lastActivityTime) == 0 or string_toDatetime(lastActivityTime) > a.startTime:
@@ -247,8 +253,8 @@ def UserActivityHistory():
                     'type': a.locationType,
                 },
                 'status': a.status,
-                'initiator': bytes.decode(gen_3rd_session(a.initiator_id)),
-                'participants': [bytes.decode(gen_3rd_session(u.openid)) for u in a.participants],
+                'hasParticipated': checkIfParticipated(openid, a),
+                'hasInitiated': checkIfInitiated(openid, a),
             }
             alist.append(a_dict)
 

@@ -1,4 +1,5 @@
 # app/auth/views.py
+# coding=utf-8
 
 import json
 import requests

@@ -49,11 +49,11 @@ class Discussion(db.Model):
     __tablename__ = 'discussions'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    title = db.Column(db.String(60), nullable=False)
     createtime = db.Column(db.TIMESTAMP(True), nullable=False, default=datetime.datetime.now)
     content = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(60))
-
+    is_img = db.Column(db.Boolean, default=False)
+    
+    author_id = db.Column(db.String(128), db.ForeignKey('users.openid'))
     activity_id = db.Column(db.Integer, db.ForeignKey('activities.id'))
 
     def __repr__(self):

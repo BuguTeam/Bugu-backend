@@ -5,8 +5,8 @@ from flask import request, jsonify, render_template, redirect
 import math
 from . import user
 from .. import db
-from ..models import User, Activity, Discussion
-from ..auth import gen_openid, gen_3rd_session
+from ..models import User, Activity
+from ..auth import gen_openid
 
 # 把1km(暂定)转换成纬度差
 def dis_1kmToLatitude():
@@ -279,52 +279,6 @@ def UserActivityHistory():
 def activityDisplay():
     return render_template('test.html')
 
-@user.route('/activityDisplayer/discussion', methods=['GET', 'POST'])
-def discuss():
-
-    if request.method == 'POST':
-        post_activity = int(request.form['activity_id'])
-        all_posts = Discussion.query.filter(Discussion.activity_id==post_activity).order_by(Discussion.createtime).all()
-        return render_template('discussion.html', posts=all_posts)
-    else:
-        all_posts = Discussion.query.order_by(Discussion.createtime).all()
-        return render_template('discussion.html', posts=all_posts)
-
-@user.route('/activityDisplayer/discussion/create', methods=['GET', 'POST'])
-def create():
-
-    if request.method == 'POST':
-        post_title = request.form['title']
-        post_content = request.form['content']
-        post_author = request.form['author']
-        post_activity = request.form['activity_id']
-        new_post = Discussion(title=post_title, content=post_content, author=post_author, activity_id=int(post_activity))
-        db.session.add(new_post)
-        db.session.commit()
-        return redirect('/user/activityDisplayer/discussion')
-    else:
-        return render_template('create.html')
-
-@user.route('/activityDisplayer/discussion/delete/<int:id>', methods=['GET', 'POST'])
-def delete_post(id):
-    post = Discussion.query.get_or_404(id)
-    db.session.delete(post)
-    db.session.commit()
-    return redirect('/user/activityDisplayer/discussion')
-
-@user.route('/activityDisplayer/discussion/edit/<int:id>', methods=['GET', 'POST'])
-def edit_post(id):
-    post = Discussion.query.get_or_404(id)
-    if request.method == 'POST':
-        post.title = request.form['title']
-        post.content = request.form['content']
-        post.author = request.form['author']
-        post.activity_id = int(request.form['activity_id'])
-        db.session.commit()
-        return redirect('/user/activityDisplayer/discussion')
-    else:
-        return render_template('edit.html', post=post)
-    
 @user.route('/joinActivity', methods=['GET', 'POST'])
 def joinActivity():
     print(joinActivity)

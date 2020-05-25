@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import json
 import time
 import datetime
@@ -125,7 +127,9 @@ def getActivityList():
             return a.startTime
             
         activities.sort(key=getStartTime, reverse=True)
-        activities = activities[0:limit]
+        # activities = activities[0:limit]
+
+        cnt = 0
         
         for a in activities:
             # update STATUS of activity before return
@@ -144,8 +148,12 @@ def getActivityList():
                     update = True
             
             if update:
-                res = db.session.query(Activity).filter(Activity.id == a.id).update({"status":a.status})
                 db.session.commit()
+
+            if a.status != "招募人员中":
+                continue
+
+            cnt += 1
 
             a_dict = {
                 'id': a.id,
@@ -168,6 +176,9 @@ def getActivityList():
             alist.append(a_dict)
             if len(lastActivityTime) == 0 or string_toDatetime(lastActivityTime) > a.startTime:
                 lastActivityTime = datetime_toString(a.startTime)
+            if cnt == limit:
+                break
+
         jsonData = {}
         jsonData['alist'] = alist
         jsonData['lastActivityTime'] = lastActivityTime
@@ -230,7 +241,6 @@ def UserActivityHistory():
                     update = True
             
             if update:
-                res = db.session.query(Activity).filter(Activity.id == a.id).update({"status":a.status})
                 db.session.commit()
             
             if status != "全部" and status != a.status:
@@ -271,7 +281,7 @@ def UserActivityHistory():
         return json.dumps(jsonData, ensure_ascii=False)
 
     else:
-        return '''visiting /user/getActivityList: Hi there! '''
+        return '''visiting /user/UserActivityHistory: Hi there! '''
 
 
 
@@ -305,12 +315,8 @@ def joinActivity():
             return 'Fail to join'
 		
         # All criteria met, add the user
-        activity.participants.append(user)
-        res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
         user.participated_activities.append(activity)
-        res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
         activity.currentParticipantNumber += 1
-        res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber": activity.currentParticipantNumber})
         db.session.commit()
         print('Successfully join')
         return 'Successfully join'
@@ -328,19 +334,47 @@ def exitfromActivity():
 		
         user = db.session.query(User).filter(User.openid == openid).first()
         activity = db.session.query(Activity).filter(Activity.id == activity_id).first()
-		
-        activity.participants.remove(user)
-        res1 = db.session.query(Activity).filter(Activity.id == activity.id).update({"participants":activity.participants})
-        user.participated_activities.remove(activity)
-        res2 = db.session.query(User).filter(User.id == user.id).update({"participated_activities":user.participated_activities})
-		
-        activity.currentParticipantNumber -= 1
-        res3 = db.session.query(Activity).filter(Activity.id == activity.id).update({"currentParticipantNumber":activity.currentParticipantNumber})
-        if activity.currentParticipantNumber == 0 or activity.initiator_id == user.openid:
+
+        # initiator cancel an activity
+        if activity.initiator_id == user.openid:
             activity.status = "已取消"
-            res4 = db.session.query(Activity).filter(Activity.id == activity.id).update({"status":activity.status})
+		# participant exit from an activity
+        else:
+            user.participated_activities.remove(activity)
+            activity.currentParticipantNumber -= 1
+        
+        db.session.commit()
+        
         print('Successfully exit')
         return 'Successfully exit'
 
     else:
         return '''visiting /user/exitfromActivity: Hi there! '''
+
+
+@user.route('/finishActivity', methods=['GET', 'POST'])
+def finishActivity():
+    print(finishActivity)
+    if request.method == 'POST':
+        third_session = request.values.get('third_session')
+        openid = gen_openid(third_session)
+        activity_id = int(json.loads(request.values.get("activity_id")))
+		
+        user = db.session.query(User).filter(User.openid == openid).first()
+        activity = db.session.query(Activity).filter(Activity.id == activity_id).first()
+
+        # initiator finish an activity
+        if activity.initiator_id == user.openid:
+            activity.status = "活动已结束"
+		# not initiator
+        else:
+            print("User(not initiator) ", openid, "tried to finish activity ", activity_id)
+            return 'You are not the initiator. Fail to finish.'
+        
+        db.session.commit()
+        
+        print('Successfully finish')
+        return 'Successfully finish'
+
+    else:
+        return '''visiting /user/finishActivity: Hi there! '''

@@ -55,3 +55,8 @@ mysql> GRANT ALL PRIVILEGES ON bugubackend_test . * TO 'buguadmin'@'localhost';
 
 3.测试中使用post向被测模块发送请求时，注意注释掉被测模块中的```db.session.commit()```语句，否则测试报错（原因可参考https://pythonhosted.org/Flask-Testing/ ）。需要执行的commit操作可以放到测试函数post请求之后的语句中（见tests.py中test_addActivity_view等函数）。
 
+#### 服务器部署：
+
+现在后端已经部署到了服务器上，服务器ip为39.104.25.65，访问端口是80
+
+服务器后端代码位于~/myGit/Bugu-backend下，如果更新了代码，需要重新运行myGit目录下的run.sh重启后端服务

@@ -351,6 +351,9 @@ def exitfromActivity():
             activity.status = "已取消"
 		# participant exit from an activity
         else:
+            if activity.registrationDDL <= datetime.datetime.now(): # registration ddl reached, cannot exit
+                print('Registration DDL reached, cannot exit!')
+                return 'Registration DDL reached, cannot exit!'
             user.participated_activities.remove(activity)
             activity.currentParticipantNumber -= 1
         

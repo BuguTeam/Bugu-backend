@@ -113,6 +113,8 @@ def getActivityList():
         print('------: ', dis_1kmToLatitude())
         print('------: ', dis_1kmToLongitude(user_latitude))
         
+        '''
+        temporary commented for testing
         # also need location filtering
         if len(lastActivityTime) > 0:
             activities_noLocation = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime), Activity.locationName == '\"不限定位置\"').all()
@@ -122,7 +124,14 @@ def getActivityList():
             activities_withinRange = Activity.query.filter(Activity.locationLongitude < user_longitude + dis_1kmToLongitude(user_latitude), Activity.locationLongitude > user_longitude - dis_1kmToLongitude(user_latitude), Activity.locationLatitude < user_latitude + dis_1kmToLatitude(), Activity.locationLatitude > user_latitude - dis_1kmToLatitude(), Activity.locationName != '\"不限定位置\"').all()
             
         activities = activities_noLocation + activities_withinRange
-        
+        '''
+
+        if len(lastActivityTime) > 0:
+            activities = Activity.query.filter(Activity.startTime < string_toDatetime(lastActivityTime)).all()
+        else:
+            activities = Activity.query.all()
+            
+
         def getStartTime(a):
             return a.startTime
             
@@ -149,6 +158,8 @@ def getActivityList():
             
             if update:
                 db.session.commit()
+
+            print('  db results: ', a, a.status)
 
             if a.status != "招募人员中":
                 continue

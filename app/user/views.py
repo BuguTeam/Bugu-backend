@@ -387,6 +387,9 @@ def finishActivity():
 
         # initiator finish an activity
         if activity.initiator_id == user.openid:
+            if activity.startTime > datetime.datetime.now():    # hasn't started
+                print("Activity ", activity_id, "hasn't started, cannot be finished.")
+                return "The activity hasn't started."
             activity.status = "活动已结束"
         # not initiator
         else:

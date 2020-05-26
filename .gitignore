@@ -4,6 +4,9 @@
 
 # Private Config
 instance/config.py
+
+# unit testing
+tests.py
   
 # Server
 *.out

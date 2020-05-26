@@ -55,6 +55,18 @@ mysql> GRANT ALL PRIVILEGES ON bugubackend_test . * TO 'buguadmin'@'localhost';
 
 3.测试中使用post向被测模块发送请求时，注意注释掉被测模块中的```db.session.commit()```语句，否则测试报错（原因可参考https://pythonhosted.org/Flask-Testing/ ）。需要执行的commit操作可以放到测试函数post请求之后的语句中（见tests.py中test_addActivity_view等函数）。
 
+4.因为当前时间会发生改变，所以显示活动历史中一些对于状态、对于列表的assert都会失效，assert失效之后后面的代码都无法执行，可以考虑注释掉部分后进行测试。或者将19改为今天，20改为明天，21改为后天来整体修改。
+
+5.可以使用coverage来体现我们测试的行覆盖率：
+
+```bash
+coverage run tests.py 
+coverage report # 显示覆盖率
+coverage html # 生成覆盖的html，存放在htmlcov/index.html中
+```
+
+
+
 #### 服务器部署：
 
 现在后端已经部署到了服务器上，服务器ip为39.104.25.65，访问端口是80

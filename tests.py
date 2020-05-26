@@ -9,7 +9,7 @@ from flask import abort, url_for
 from flask_testing import TestCase
 
 from app import create_app, db
-from app.models import User, Activity
+from app.models import User, Activity, Discussion
 
 
 class TestBase(TestCase):
@@ -43,6 +43,18 @@ class TestBase(TestCase):
         # save users to database
         db.session.add(user)
         db.session.commit()
+
+        # create test non-admin bbb
+        user = User(
+            openid="bbbopenid",
+            nickname="bbb",
+            avatar_url="bbburl",
+            is_admin=False,
+        )
+
+        # save users to database
+        db.session.add(user)
+        db.session.commit()
         print('setup done')
 
     def tearDown(self):
@@ -63,7 +75,7 @@ class TestViews(TestBase):
 
         # test1: normal request
         self.assertEqual(Activity.query.count(), 0)
-        self.assertEqual(User.query.count(), 1)
+        self.assertEqual(User.query.count(), 2)
 
         response = self.client.post(url_for('user.addActivity'),
                                     data={
@@ -191,7 +203,7 @@ class TestViews(TestBase):
         """
 
         self.assertEqual(Activity.query.count(), 0)
-        self.assertEqual(User.query.count(), 1)
+        self.assertEqual(User.query.count(), 2)
         initiator = db.session.query(User).filter(User.openid=='aaaopenid').first()
 
         act1 = Activity(
@@ -424,6 +436,217 @@ class TestViews(TestBase):
         data = json.loads(response.data)
 
         assert len(data['alist']) == 0
+
+
+    def test_discussion_create(self):
+        self.assertEqual(Activity.query.count(), 0)
+        self.assertEqual(User.query.count(), 2)
+        initiator = db.session.query(User).filter(User.openid == 'aaaopenid').first()
+        act1 = Activity(
+            title='act1',
+            startTime='2020-06-20 15:13:00',
+            registrationDDL='2020-06-19 15:13:00',
+            descript='this is act1.',
+            maxParticipantNumber=5,
+            currentParticipantNumber=1,
+            locationName='loc1',
+            locationLongitude=1.1,
+            locationLatitude=2.2,
+            locationType='wsg64',
+            initiator_id='aaaopenid')
+
+        initiator.participated_activities.append(act1)
+        db.session.add(act1)
+
+        act2 = Activity(
+            title='act2',
+            startTime='2020-06-20 15:13:00',
+            registrationDDL='2020-06-20 15:13:00',
+            descript='this is act2.',
+            maxParticipantNumber=3,
+            currentParticipantNumber=1,
+            locationName='loc2',
+            locationLongitude=2.1,
+            locationLatitude=3.2,
+            locationType='wsg64',
+            initiator_id='aaaopenid')
+
+        initiator.participated_activities.append(act2)
+        db.session.add(act2)
+
+        # test1: add message
+        response = self.client.post(url_for('user.create'),
+                                    data={
+                                        'third_session': 'aaasession',
+                                        'content': json.dumps('this is message1.'),
+                                        'activity_id': json.dumps('1'),
+                                        'is_img': json.dumps('false'),
+                                    }
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+
+        db.session.commit()  # commit changes conducted in /user/addActivity
+        self.assertEqual(Discussion.query.count(), 1)
+        message1 = Discussion.query.all()
+        assert message1[0].createtime is not None
+        assert message1[0].id is not None
+        assert message1[0].author_id == 'aaaopenid'
+
+        # test2: add messages in different activities
+        response = self.client.post(url_for('user.create'),
+                                    data={
+                                        'third_session': 'aaasession',
+                                        'content': json.dumps('this is message2.'),
+                                        'activity_id': json.dumps('2'),
+                                        'is_img': json.dumps('false'),
+                                    }
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+
+        db.session.commit()  # commit changes conducted in /user/addActivity
+        self.assertEqual(Discussion.query.count(), 2)
+        message2 = Discussion.query.filter(Discussion.content == 'this is message2.').first()
+        assert message2.createtime is not None
+        assert message2.id is not None
+        assert message2.author_id == 'aaaopenid'
+
+        # test3: cannot add messages in a non-exist activities
+        response = self.client.post(url_for('user.create'),
+                                    data={
+                                        'third_session': 'aaasession',
+                                        'content': json.dumps('this is message3.'),
+                                        'activity_id': json.dumps('3'),
+                                        'is_img': json.dumps('false'),
+                                    }
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.decode('utf-8'), 'Create Failed: Activity_id not found')
+
+        # test4: cannot add messages by a unknown user
+        response = self.client.post(url_for('user.create'),
+                                    data={
+                                        'third_session': 'unknown',
+                                        'content': json.dumps('this is message4.'),
+                                        'activity_id': json.dumps('2'),
+                                        'is_img': json.dumps('false'),
+                                    }
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.decode('utf-8'), 'Create Fail: User not found')
+
+
+    def test_discussion_display(self):
+
+        self.assertEqual(Activity.query.count(), 0)
+        self.assertEqual(User.query.count(), 2)
+        initiator = db.session.query(User).filter(User.openid == 'aaaopenid').first()
+        act1 = Activity(
+            title='act1',
+            startTime='2020-06-20 15:13:00',
+            registrationDDL='2020-06-19 15:13:00',
+            descript='this is act1.',
+            maxParticipantNumber=5,
+            currentParticipantNumber=1,
+            locationName='loc1',
+            locationLongitude=1.1,
+            locationLatitude=2.2,
+            locationType='wsg64',
+            initiator_id='aaaopenid')
+        initiator.participated_activities.append(act1)
+        db.session.add(act1)
+        act2 = Activity(
+            title='act2',
+            startTime='2020-06-20 15:13:00',
+            registrationDDL='2020-06-20 15:13:00',
+            descript='this is act2.',
+            maxParticipantNumber=3,
+            currentParticipantNumber=1,
+            locationName='loc2',
+            locationLongitude=2.1,
+            locationLatitude=3.2,
+            locationType='wsg64',
+            initiator_id='aaaopenid')
+        initiator.participated_activities.append(act2)
+        db.session.add(act2)
+        db.session.commit()
+        message1 = Discussion(
+            createtime='2020-06-19 15:13:00',
+            content='this is message1.',
+            is_img=False,
+            author_id='aaaopenid',
+            activity_id='1'
+        )
+        db.session.add(message1)
+        message2 = Discussion(
+            createtime='2020-06-21 15:13:00',
+            content='this is message2.',
+            is_img = False,
+            author_id='aaaopenid',
+            activity_id='2'
+        )
+        db.session.add(message2)
+        message3 = Discussion(
+            createtime='2020-06-20 15:13:00',
+            content='this is message3.',
+            is_img=False,
+            author_id='aaaopenid',
+            activity_id='1'
+        )
+        db.session.add(message3)
+        message4 = Discussion(
+            createtime='2020-06-18 15:13:00',
+            content='this is message4.',
+            is_img=False,
+            author_id='bbbopenid',
+            activity_id='1'
+        )
+        db.session.add(message4)
+        db.session.commit()
+
+        # test1: test the filter in specific activity
+        response = self.client.post(url_for('user.discuss'),
+                                    data={
+                                        'third_session': 'aaasession',
+                                        'activity_id': json.dumps('1')
+                                    }
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+        all_posts = json.loads(response.data)
+        assert len(all_posts) == 3
+
+        # test2: test the list is ordered by createtime
+        assert all_posts[0]['content'] == 'this is message4.'
+        assert all_posts[1]['content'] == 'this is message1.'
+        assert all_posts[2]['content'] == 'this is message3.'
+
+        # test3: test the priorities in Discussion is correct
+        assert all_posts[0]['myCommentFlag'] == False
+        assert all_posts[1]['myCommentFlag'] == True
+        assert all_posts[2]['myCommentFlag'] == True
+
+        assert all_posts[0]['userName'] == "bbb"
+        assert all_posts[1]['userName'] == "aaa"
+
+        assert all_posts[0]['userAvatarUrl'] == "bbburl"
+        assert all_posts[1]['userAvatarUrl'] == "aaaurl"
+
+        # test4: show nothing if ask for a non-exist activity
+        response = self.client.post(url_for('user.discuss'),
+                                    data={
+                                        'third_session': 'aaasession',
+                                        'activity_id': json.dumps('3')
+                                    }
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+        all_posts = json.loads(response.data)
+        assert len(all_posts) == 0
+
 
 
 if __name__ == '__main__':

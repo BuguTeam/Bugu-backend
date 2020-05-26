@@ -42,6 +42,7 @@ def postToDict(post, requestOpenid):
         'userName': userName,
         'userAvatarUrl': userAvatarUrl,
     }
+
 def getAllPosts(activity_id, requestOpenid):
     all_posts = Discussion.query.filter(Discussion.activity_id==activity_id).order_by(Discussion.createtime).all()
     
@@ -74,18 +75,24 @@ def create():
         activity_id = int(json.loads(request.values.get('activity_id')))
         content = str(json.loads(request.values.get('content')))
         is_img = bool(json.loads(request.values.get('is_img')))
-        
         openid = gen_openid(third_session)
-        user = db.session.query(User).filter(User.openid==openid).first()
-        
+        try:
+            user = db.session.query(User).filter(User.openid==openid).first()
+        except:
+            return 'Create Fail: User not found'
+
         new_post = Discussion(
             content=content, 
             is_img=is_img,
             author_id=user.openid, 
             activity_id=activity_id
             )
+
         db.session.add(new_post)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except:
+            return 'Create Failed: Activity_id not found'
         return json.dumps(getAllPosts(activity_id, openid), ensure_ascii=False)
     else:
         return render_template('create.html')

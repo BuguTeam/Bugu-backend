@@ -20,10 +20,9 @@ def gen_3rd_session(openid):
     return third_session
 
 def gen_openid(third_session):
-    return 'aaaopenid'
-    #s = Serializer(current_app.config['SECRET_KEY'])
-    #openid = s.loads(third_session)['openid']
-    #return openid
+    s = Serializer(current_app.config['SECRET_KEY'])
+    openid = s.loads(third_session)['openid']
+    return openid
     
     
 @auth.route('/login', methods=['GET', 'POST'])

@@ -1,10 +1,12 @@
 ## Bugu-backend
 
-这是一个dev分支
+这是Bugu微信小程序后端服务器的一个稳定版本。实现了所有功能，以及在服务器上的部署和与前端的连接。
 
-Bugu微信小程序后端：使用flask+MySQL
+## 技术框架
 
-用到的工具
+使用flask+MySQL
+
+### 用到的工具
 
 1.需要先安装MySQL，并熟悉相关操作.
 
@@ -12,7 +14,7 @@ Bugu微信小程序后端：使用flask+MySQL
 
 
 
-目录结构：
+## 目录结构
 
 ```
 ├── web
@@ -26,7 +28,9 @@ Bugu微信小程序后端：使用flask+MySQL
        └── run.py
 ```
 
-`instance\config.py`中是配置文件，包含密钥等信息。
+`instance\config.py`中是配置文件，包含密钥等信息。这一部分由开发组成员保留，没有上传到当前的仓库。
+
+## 运行
 
 1.配置virtualenv环境
 
@@ -154,15 +158,40 @@ db.session.commit()
 
 
 
-#### session管理
+## 其他说明
 
-微信小程序的登录流程比较复杂，参考： https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html 
+### session管理
 
-一些参考资料：https://www.cnblogs.com/dashucoding/p/9917371.html 
+微信小程序的登录流程比较复杂，后端服务器需要与小程序前端，和微信服务器进行交互。参考官方的说明[[link](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html )] 。
 
-3rd_session：  http://www.yiyongtong.com/archives/view-5954-1.html 
+一些参考资料：[[link1](https://www.cnblogs.com/dashucoding/p/9917371.html )] [[3rd_session](http://www.yiyongtong.com/archives/view-5954-1.html )]
+
+##### 主要流程
+
+1. 微信小程序端调用wx.login，获取登录凭证（code），并调用接口，将code发送到第三方客户端
+2. 小程序端将code传给第三方服务器端，第三方服务器端调用接口，用code换取session_key 和openid (用户唯一身份标识)
+3. 第三方服务器端拿到请求回来的session_key和openid，但是不能把Openid直接给客户端；而是生成一个新的session，叫3rd_session (临时登录态，每一次都生成不同的session key，可以由3rd_session解码出openid，临时登录态会过期，过期后不能正确解码)
+4. 第三方服务端建立openid和用户信息的对应关系，保存起来
+5. 第三方服务端将3rd_session发送到客户端；客户端只拿到3rd_session就够了，小程序不需要知道session_key和openid
+6. 正常请求：小程序每次请求都将3rd_session放在请求头里，第三方服务端解析3rd_session得到openid，判断合法性，并进行正常的逻辑处理。
+
+##### third_session相关实现
+
+比如判断用户是否加入活动，只能用用户的Openid来建立关联，不能用3rdsession。
+
+因为，3rdsession只是一个**临时** **会话**的标识
+
+- 观察一下后端的输出，可以发现同一个用户每一次会话的3rdsession都是不一样的，这是因为同一个 gen_3rd_session(u.openid) 的多次执行结果是不一样的。
+- 3rdsession是**临时**的！ 3rdsession在一定时间内（可以自己设置）可以解码出原来的openid，但是一段时间过后就不行了。这就是为什么前端开发工具运行很长一段时间之后有时会报错，这是因为一开始申请的临时会话过期了，3rdsession不能正确的解码出openid；重新编译之后就正常了。过期的问题是每一次申请新的3rdsession，还是请求失败之后重新申请，之后有待解决，不过目前短时间内的访问是没有问题的。
+
+目前3rdsession用 itsdangerous库的`TimedJSONWebSignatureSerializer`实现。
 
 
 
 #### Discussion部分的改动
 
+#### 服务器部署：
+
+现在后端已经部署到了服务器上，服务器ip为39.104.25.65，访问端口是80
+
+服务器后端代码位于~/myGit/Bugu-backend下，如果更新了代码，需要重新运行myGit目录下的run.sh重启后端服务
